@@ -45,4 +45,4 @@ If you encounter any issues or have suggestions for improvements, please open an
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License](LICENSE.md)
