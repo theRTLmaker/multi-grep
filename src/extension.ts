@@ -122,6 +122,16 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     font-weight: bold;
                     color: var(--vscode-button-foreground);
                 }
+                .pattern-options {
+                    display: flex;
+                    gap: 10px;
+                    margin-top: 5px;
+                }
+                .pattern-option {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                }
             </style>
         </head>
         <body>
@@ -132,6 +142,14 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     <div class="pattern-group">
                         <input type="text" class="pattern-input" placeholder="Enter search pattern">
                         <button class="and-button">&</button>
+                        <div class="pattern-options">
+                            <label class="pattern-option">
+                                <input type="checkbox" class="match-case"> Match Case
+                            </label>
+                            <label class="pattern-option">
+                                <input type="checkbox" class="match-whole-word"> Match Whole Word
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -149,6 +167,14 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                         <div class="pattern-group">
                             <input type="text" class="pattern-input" placeholder="Enter search pattern">
                             <button class="and-button">&</button>
+                            <div class="pattern-options">
+                                <label class="pattern-option">
+                                    <input type="checkbox" class="match-case"> Match Case
+                                </label>
+                                <label class="pattern-option">
+                                    <input type="checkbox" class="match-whole-word"> Match Whole Word
+                                </label>
+                            </div>
                         </div>
                     \`;
                     addRemoveListener(row.querySelector('.remove-pattern'));
@@ -205,7 +231,15 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                 document.getElementById('apply').addEventListener('click', () => {
                     const patterns = Array.from(patternsContainer.getElementsByClassName('pattern-row')).map(row => {
                         const inputs = row.getElementsByClassName('pattern-input');
-                        return Array.from(inputs).map(input => input.value.trim()).filter(v => v !== '');
+                        return Array.from(inputs).map(input => {
+                            const matchCase = input.parentElement.querySelector('.match-case').checked;
+                            const matchWholeWord = input.parentElement.querySelector('.match-whole-word').checked;
+                            return {
+                                pattern: input.value.trim(),
+                                matchCase,
+                                matchWholeWord
+                            };
+                        }).filter(v => v.pattern !== '');
                     }).filter(group => group.length > 0);
                     vscode.postMessage({ type: 'apply', patterns: patterns });
                 });
@@ -214,7 +248,7 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
         </html>`;
     }
 
-    private async _applyGrep(patterns: string[][]) {
+    private async _applyGrep(patterns: Array<Array<{ pattern: string; matchCase: boolean; matchWholeWord: boolean }>>) {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const document = editor.document;
@@ -223,8 +257,12 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             let results = '';
 
             lines.forEach((line) => {
-                if (patterns.some(group => group.every(pattern => {
-                    const regex = new RegExp(pattern, 'i');
+                if (patterns.some(group => group.every(({ pattern, matchCase, matchWholeWord }) => {
+                    let flags = 'g';
+                    if (!matchCase) flags += 'i';
+                    let regexPattern = pattern;
+                    if (matchWholeWord) regexPattern = `\\b${regexPattern}\\b`;
+                    const regex = new RegExp(regexPattern, flags);
                     return regex.test(line);
                 }))) {
                     results += `${line.trim()}\n`;
