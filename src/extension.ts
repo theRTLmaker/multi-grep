@@ -40,18 +40,75 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
             <title>Multi-Grep</title>
             <style>
-                body { padding: 10px; font-family: Arial, sans-serif; }
-                #patterns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
-                .pattern-row { display: flex; gap: 5px; }
-                .pattern-input { flex-grow: 1; }
-                button { cursor: pointer; }
+                body {
+                    padding: 20px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+                    color: var(--vscode-foreground);
+                    background-color: var(--vscode-editor-background);
+                }
+                h1 {
+                    font-size: 1.5em;
+                    margin-bottom: 20px;
+                    color: var(--vscode-titleBar-activeForeground);
+                }
+                #patterns {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
+                .pattern-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .pattern-input {
+                    flex-grow: 1;
+                    padding: 5px 10px;
+                    border: 1px solid var(--vscode-input-border);
+                    background-color: var(--vscode-input-background);
+                    color: var(--vscode-input-foreground);
+                    border-radius: 3px;
+                    height: 24px;
+                    box-sizing: border-box;
+                }
+                button {
+                    padding: 5px 10px;
+                    background-color: var(--vscode-button-background);
+                    color: var(--vscode-button-foreground);
+                    border: none;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                }
+                button:hover {
+                    background-color: var(--vscode-button-hoverBackground);
+                }
+                #add-pattern {
+                    margin-right: 10px;
+                }
+                .remove-pattern {
+                    background-color: var(--vscode-errorForeground);
+                    width: 24px;
+                    height: 24px;
+                    padding: 0;
+                    font-size: 18px;
+                    line-height: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+                .remove-pattern:hover {
+                    background-color: var(--vscode-inputValidation-errorBackground);
+                }
             </style>
         </head>
         <body>
             <h1>Multi-Grep</h1>
             <div id="patterns">
                 <div class="pattern-row">
-                    <input type="text" class="pattern-input">
+                    <input type="text" class="pattern-input" placeholder="Enter search pattern">
                     <button class="remove-pattern">-</button>
                 </div>
             </div>
