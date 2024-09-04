@@ -84,3 +84,5 @@ dist/
 
 node_modules/
 out/
+
+*lock.json

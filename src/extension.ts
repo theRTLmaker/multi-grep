@@ -60,7 +60,26 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                 .pattern-row {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
+                    gap: 5px;
+                }
+                .pattern-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    flex-grow: 1;
+                }
+                .remove-pattern {
+                    background-color: var(--vscode-errorForeground);
+                    width: 24px;
+                    height: 24px;
+                    padding: 0;
+                    font-size: 18px;
+                    line-height: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    order: -1; /* This moves the button to the start of the flex container */
                 }
                 .pattern-input {
                     flex-grow: 1;
@@ -87,20 +106,21 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                 #add-pattern {
                     margin-right: 10px;
                 }
-                .remove-pattern {
-                    background-color: var(--vscode-errorForeground);
+                .and-button {
+                    background-color: var(--vscode-button-background);
                     width: 24px;
                     height: 24px;
                     padding: 0;
-                    font-size: 18px;
+                    font-size: 14px;
                     line-height: 1;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
                 }
-                .remove-pattern:hover {
-                    background-color: var(--vscode-inputValidation-errorBackground);
+                .and-operator {
+                    font-weight: bold;
+                    color: var(--vscode-button-foreground);
                 }
             </style>
         </head>
@@ -108,8 +128,11 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             <h1>Multi-Grep</h1>
             <div id="patterns">
                 <div class="pattern-row">
-                    <input type="text" class="pattern-input" placeholder="Enter search pattern">
                     <button class="remove-pattern">-</button>
+                    <div class="pattern-group">
+                        <input type="text" class="pattern-input" placeholder="Enter search pattern">
+                        <button class="and-button">&</button>
+                    </div>
                 </div>
             </div>
             <button id="add-pattern">+</button>
@@ -122,11 +145,30 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     const row = document.createElement('div');
                     row.className = 'pattern-row';
                     row.innerHTML = \`
-                        <input type="text" class="pattern-input">
                         <button class="remove-pattern">-</button>
+                        <div class="pattern-group">
+                            <input type="text" class="pattern-input" placeholder="Enter search pattern">
+                            <button class="and-button">&</button>
+                        </div>
                     \`;
                     addRemoveListener(row.querySelector('.remove-pattern'));
+                    addAndListener(row.querySelector('.and-button'));
                     return row;
+                }
+
+                function createAndPattern(button) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'pattern-input';
+                    input.placeholder = 'Enter AND pattern';
+
+                    const operator = document.createElement('span');
+                    operator.className = 'and-operator';
+                    operator.textContent = '&&';
+
+                    const group = button.closest('.pattern-group');
+                    group.insertBefore(operator, button);
+                    group.insertBefore(input, button);
                 }
 
                 function addRemoveListener(button) {
@@ -140,8 +182,15 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     });
                 }
 
-                // Add listener to the initial remove button
+                function addAndListener(button) {
+                    button.addEventListener('click', function() {
+                        createAndPattern(this);
+                    });
+                }
+
+                // Add listeners to the initial buttons
                 addRemoveListener(patternsContainer.querySelector('.remove-pattern'));
+                addAndListener(patternsContainer.querySelector('.and-button'));
 
                 document.getElementById('add-pattern').addEventListener('click', () => {
                     const inputs = patternsContainer.getElementsByClassName('pattern-input');
@@ -154,15 +203,18 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                 });
 
                 document.getElementById('apply').addEventListener('click', () => {
-                    const patterns = Array.from(document.getElementsByClassName('pattern-input')).map(input => input.value);
-                    vscode.postMessage({ type: 'apply', patterns: patterns.filter(p => p.trim() !== '') });
+                    const patterns = Array.from(patternsContainer.getElementsByClassName('pattern-row')).map(row => {
+                        const inputs = row.getElementsByClassName('pattern-input');
+                        return Array.from(inputs).map(input => input.value.trim()).filter(v => v !== '');
+                    }).filter(group => group.length > 0);
+                    vscode.postMessage({ type: 'apply', patterns: patterns });
                 });
             </script>
         </body>
         </html>`;
     }
 
-    private async _applyGrep(patterns: string[]) {
+    private async _applyGrep(patterns: string[][]) {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const document = editor.document;
@@ -170,12 +222,11 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             const lines = text.split('\n');
             let results = '';
 
-            // Create a single regex pattern for all search terms
-            const combinedPattern = patterns.map(p => `(${p})`).join('|');
-            const regex = new RegExp(combinedPattern, 'i'); // 'i' for case-insensitive
-
             lines.forEach((line) => {
-                if (regex.test(line)) {
+                if (patterns.some(group => group.every(pattern => {
+                    const regex = new RegExp(pattern, 'i');
+                    return regex.test(line);
+                }))) {
                     results += `${line.trim()}\n`;
                 }
             });
