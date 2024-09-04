@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 
 class MultiGrepViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'multi-grep-view';
+    private _view?: vscode.WebviewView;
+    private _state: any = { patterns: [[{ pattern: '', matchCase: false, matchWholeWord: false }]] };
 
     constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -10,6 +12,8 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
         context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken,
     ) {
+        this._view = webviewView;
+
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [this._extensionUri]
@@ -21,10 +25,28 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             switch (data.type) {
                 case 'apply':
                     this._applyGrep(data.patterns);
+                    this._state.patterns = data.patterns;
                     break;
                 case 'info':
                     vscode.window.showInformationMessage(data.message);
                     break;
+                case 'stateUpdate':
+                    this._state = data.state;
+                    break;
+                case 'reset':
+                    this._state = { patterns: [[{ pattern: '', matchCase: false, matchWholeWord: false }]] };
+                    this._view?.webview.postMessage({ type: 'reset', state: this._state });
+                    break;
+            }
+        });
+
+        // Send the initial state to the webview
+        webviewView.webview.postMessage({ type: 'initialState', state: this._state });
+
+        // Update the webview's content when it becomes visible
+        webviewView.onDidChangeVisibility(() => {
+            if (webviewView.visible) {
+                webviewView.webview.postMessage({ type: 'initialState', state: this._state });
             }
         });
     }
@@ -38,6 +60,7 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+            <title>Multi-Grep</title>
             <style>
                 :root {
                     --container-padding: 20px;
@@ -168,10 +191,11 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     border: none;
                     cursor: pointer;
                     border-radius: 4px;
-                    background-color: transparent;
+                    background-color: var(--vscode-button-secondaryBackground);
+                    color: var(--vscode-button-secondaryForeground);
                 }
                 .icon-button:hover {
-                    opacity: 0.8;
+                    background-color: var(--vscode-button-secondaryHoverBackground);
                 }
                 .icon-button.active {
                     background-color: var(--vscode-inputOption-activeBackground);
@@ -181,7 +205,7 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     color: var(--vscode-errorForeground);
                 }
                 .and-button {
-                    color: var(--vscode-button-foreground);
+                    color: var(--vscode-button-background);
                 }
                 .and-operator {
                     font-weight: bold;
@@ -198,11 +222,31 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     margin-top: 10px;
                     width: 100%;
                 }
+                .button-container {
+                    display: flex;
+                    align-items: stretch;
+                    margin-bottom: 10px;
+                }
+                #apply {
+                    flex-grow: 1;
+                    margin-right: 5px;
+                }
+                #reset {
+                    width: 24px;
+                    padding: 0;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
             </style>
         </head>
         <body>
             <h1>Multi-Grep</h1>
-            <button id="apply">Apply</button>
+            <div class="button-container">
+                <button id="apply">Apply</button>
+                <button id="reset" class="icon-button" title="Reset">↺</button>
+            </div>
             <div id="patterns">
                 <div class="pattern-row">
                     <button class="icon-button remove-pattern" title="Remove">×</button>
@@ -220,6 +264,7 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             <script nonce="${nonce}">
                 const vscode = acquireVsCodeApi();
                 const patternsContainer = document.getElementById('patterns');
+                let state = { patterns: [[{ pattern: '', matchCase: false, matchWholeWord: false }]] };
 
                 function createPatternRow() {
                     const row = document.createElement('div');
@@ -256,10 +301,12 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                         patternGroup.insertBefore(newInput, this);
                     });
 
-                    row.querySelectorAll('.match-case-button, .match-whole-word-button').forEach(button => {
-                        button.addEventListener('click', function() {
-                            this.classList.toggle('active');
-                        });
+                    row.querySelector('.match-case-button').addEventListener('click', function() {
+                        this.classList.toggle('active');
+                    });
+
+                    row.querySelector('.match-whole-word-button').addEventListener('click', function() {
+                        this.classList.toggle('active');
                     });
                 }
 
@@ -277,16 +324,64 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     }
                 });
 
-                document.getElementById('apply').addEventListener('click', () => {
-                    const patterns = Array.from(patternsContainer.getElementsByClassName('pattern-row')).map(row => {
+                function updateState() {
+                    state.patterns = Array.from(patternsContainer.getElementsByClassName('pattern-row')).map(row => {
                         return Array.from(row.getElementsByClassName('pattern-input')).map(input => ({
                             pattern: input.value.trim(),
                             matchCase: row.querySelector('.match-case-button').classList.contains('active'),
                             matchWholeWord: row.querySelector('.match-whole-word-button').classList.contains('active')
-                        })).filter(p => p.pattern !== '');
-                    }).filter(group => group.length > 0);
-                    vscode.postMessage({ type: 'apply', patterns: patterns });
+                        }));
+                    });
+                    vscode.postMessage({ type: 'stateUpdate', state: state });
+                }
+
+                document.getElementById('apply').addEventListener('click', () => {
+                    updateState();
+                    vscode.postMessage({ type: 'apply', patterns: state.patterns });
                 });
+
+                document.getElementById('reset').addEventListener('click', () => {
+                    vscode.postMessage({ type: 'reset' });
+                });
+
+                window.addEventListener('message', event => {
+                    const message = event.data;
+                    switch (message.type) {
+                        case 'initialState':
+                            state = message.state;
+                            renderPatterns();
+                            break;
+                        case 'reset':
+                            state = message.state;
+                            renderPatterns();
+                            break;
+                    }
+                });
+
+                function renderPatterns() {
+                    patternsContainer.innerHTML = '';
+                    state.patterns.forEach(group => {
+                        const row = createPatternRow();
+                        patternsContainer.appendChild(row);
+                        group.forEach((pattern, index) => {
+                            if (index > 0) {
+                                const andButton = row.querySelector('.and-button');
+                                andButton.click();
+                            }
+                            const input = row.querySelectorAll('.pattern-input')[index];
+                            input.value = pattern.pattern;
+                            if (pattern.matchCase) {
+                                row.querySelector('.match-case-button').classList.add('active');
+                            }
+                            if (pattern.matchWholeWord) {
+                                row.querySelector('.match-whole-word-button').classList.add('active');
+                            }
+                        });
+                    });
+                }
+
+                // Initial render
+                renderPatterns();
             </script>
         </body>
         </html>`;
