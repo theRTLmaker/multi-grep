@@ -1,43 +1,41 @@
 {
   "name": "multi-grep",
   "displayName": "Multi-Grep",
-  "description": "A VS Code extension for multi-pattern grepping",
+  "description": "Perform complex, multi-pattern searches within your active text editor",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onView:multi-grep-view"
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "multi-grep.start",
+        "title": "Start Multi-Grep"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "multi-grep-sidebar",
+          "id": "multi-grep-sidebar-view",
           "title": "Multi-Grep",
-          "icon": "resources/icon.svg"
+          "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "multi-grep-sidebar": [
+      "multi-grep-sidebar-view": [
         {
           "type": "webview",
           "id": "multi-grep-view",
           "name": "Multi-Grep"
         }
       ]
-    },
-    "commands": [
-      {
-        "command": "multi-grep.start",
-        "title": "Start Multi-Grep"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -45,14 +43,22 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.60.0",
-    "@types/node": "^14.x.x",
-    "@typescript-eslint/eslint-plugin": "^4.x.x",
-    "@typescript-eslint/parser": "^4.x.x",
-    "eslint": "^7.x.x",
-    "typescript": "^4.x.x"
-  }
+    "@types/vscode": "^1.85.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theRTLmaker/multi-grep.git"
+  },
+  "publisher": "Francisco Soares Mendes"
 }
