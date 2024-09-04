@@ -38,123 +38,185 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
-            <title>Multi-Grep</title>
             <style>
+                :root {
+                    --container-padding: 20px;
+                    --input-padding-vertical: 6px;
+                    --input-padding-horizontal: 12px;
+                    --input-margin-vertical: 4px;
+                    --input-margin-horizontal: 0;
+                }
                 body {
-                    padding: 20px;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+                    padding: 0 var(--container-padding);
                     color: var(--vscode-foreground);
-                    background-color: var(--vscode-editor-background);
+                    font-size: var(--vscode-font-size);
+                    font-weight: var(--vscode-font-weight);
+                    font-family: var(--vscode-font-family);
+                    background-color: var(--vscode-sideBar-background);
+                }
+                ol, ul {
+                    padding-left: var(--container-padding);
+                }
+                body > *,
+                form > * {
+                    margin-block-start: var(--input-margin-vertical);
+                    margin-block-end: var(--input-margin-vertical);
+                }
+                *:focus {
+                    outline-color: var(--vscode-focusBorder) !important;
+                }
+                a {
+                    color: var(--vscode-textLink-foreground);
+                }
+                a:hover,
+                a:active {
+                    color: var(--vscode-textLink-activeForeground);
+                }
+                code {
+                    font-size: var(--vscode-editor-font-size);
+                    font-family: var(--vscode-editor-font-family);
+                }
+                button {
+                    border: none;
+                    padding: var(--input-padding-vertical) var(--input-padding-horizontal);
+                    text-align: center;
+                    outline: 1px solid transparent;
+                    outline-offset: 2px !important;
+                    color: var(--vscode-button-foreground);
+                    background: var(--vscode-button-background);
+                    border-radius: 4px;
+                }
+                button:hover {
+                    cursor: pointer;
+                    background: var(--vscode-button-hoverBackground);
+                }
+                button:focus {
+                    outline-color: var(--vscode-focusBorder);
+                }
+                button.secondary {
+                    color: var(--vscode-button-secondaryForeground);
+                    background: var(--vscode-button-secondaryBackground);
+                }
+                button.secondary:hover {
+                    background: var(--vscode-button-secondaryHoverBackground);
+                }
+                input:not([type='checkbox']),
+                textarea {
+                    display: block;
+                    width: 100%;
+                    border: none;
+                    font-family: var(--vscode-font-family);
+                    padding: var(--input-padding-vertical) var(--input-padding-horizontal);
+                    color: var(--vscode-input-foreground);
+                    outline-color: var(--vscode-input-border);
+                    background-color: var(--vscode-input-background);
+                    border-radius: 4px;
+                }
+                input::placeholder,
+                textarea::placeholder {
+                    color: var(--vscode-input-placeholderForeground);
                 }
                 h1 {
-                    font-size: 1.5em;
-                    margin-bottom: 20px;
-                    color: var(--vscode-titleBar-activeForeground);
-                }
-                #patterns {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    margin-bottom: 20px;
+                    font-size: 1.2em;
+                    font-weight: 600;
+                    margin-bottom: 1em;
+                    margin-top: 1em;
+                    text-transform: uppercase;
+                    color: var(--vscode-sideBarSectionHeader-foreground);
                 }
                 .pattern-row {
                     display: flex;
                     align-items: center;
-                    gap: 5px;
+                    margin-bottom: 10px;
+                    gap: 4px;
                 }
                 .pattern-group {
                     display: flex;
                     align-items: center;
-                    gap: 5px;
+                    gap: 4px;
                     flex-grow: 1;
+                    flex-wrap: wrap;
                 }
-                .remove-pattern {
-                    background-color: var(--vscode-errorForeground);
-                    width: 24px;
-                    height: 24px;
-                    padding: 0;
-                    font-size: 18px;
-                    line-height: 1;
+                .pattern-input-container {
                     display: flex;
                     align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                    order: -1; /* This moves the button to the start of the flex container */
+                    background-color: var(--vscode-input-background);
+                    border: 1px solid var(--vscode-input-border);
+                    flex-grow: 1;
+                    min-width: 100px;
+                    border-radius: 4px;
                 }
                 .pattern-input {
                     flex-grow: 1;
-                    padding: 5px 10px;
-                    border: 1px solid var(--vscode-input-border);
-                    background-color: var(--vscode-input-background);
-                    color: var(--vscode-input-foreground);
-                    border-radius: 3px;
-                    height: 24px;
-                    box-sizing: border-box;
-                }
-                button {
-                    padding: 5px 10px;
-                    background-color: var(--vscode-button-background);
-                    color: var(--vscode-button-foreground);
                     border: none;
-                    border-radius: 3px;
-                    cursor: pointer;
-                    transition: background-color 0.2s;
+                    padding: 4px 8px;
+                    background-color: transparent;
+                    color: var(--vscode-input-foreground);
+                    min-width: 50px;
                 }
-                button:hover {
-                    background-color: var(--vscode-button-hoverBackground);
+                .pattern-input:focus {
+                    outline: none;
                 }
-                #add-pattern {
-                    margin-right: 10px;
-                }
-                .and-button {
-                    background-color: var(--vscode-button-background);
+                .icon-button {
                     width: 24px;
                     height: 24px;
-                    padding: 0;
-                    font-size: 14px;
-                    line-height: 1;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    font-size: 14px;
                     flex-shrink: 0;
+                    border: none;
+                    cursor: pointer;
+                    border-radius: 4px;
+                    background-color: transparent;
+                }
+                .icon-button:hover {
+                    opacity: 0.8;
+                }
+                .icon-button.active {
+                    background-color: var(--vscode-inputOption-activeBackground);
+                    color: var(--vscode-inputOption-activeForeground);
+                }
+                .remove-pattern {
+                    color: var(--vscode-errorForeground);
+                }
+                .and-button {
+                    color: var(--vscode-button-foreground);
                 }
                 .and-operator {
                     font-weight: bold;
-                    color: var(--vscode-button-foreground);
+                    margin: 0 4px;
+                    white-space: nowrap;
                 }
-                .pattern-options {
-                    display: flex;
-                    gap: 10px;
-                    margin-top: 5px;
+                #apply {
+                    margin-bottom: 10px;
+                    width: 100%;
+                    font-size: 14px;
+                    font-weight: 500;
                 }
-                .pattern-option {
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
+                #add-pattern {
+                    margin-top: 10px;
+                    width: 100%;
                 }
             </style>
         </head>
         <body>
             <h1>Multi-Grep</h1>
+            <button id="apply">Apply</button>
             <div id="patterns">
                 <div class="pattern-row">
-                    <button class="remove-pattern">-</button>
+                    <button class="icon-button remove-pattern" title="Remove">×</button>
+                    <button class="icon-button match-case-button" title="Match Case">Aa</button>
+                    <button class="icon-button match-whole-word-button" title="Match Whole Word">ab</button>
                     <div class="pattern-group">
-                        <input type="text" class="pattern-input" placeholder="Enter search pattern">
-                        <button class="and-button">&</button>
-                        <div class="pattern-options">
-                            <label class="pattern-option">
-                                <input type="checkbox" class="match-case"> Match Case
-                            </label>
-                            <label class="pattern-option">
-                                <input type="checkbox" class="match-whole-word"> Match Whole Word
-                            </label>
+                        <div class="pattern-input-container">
+                            <input type="text" class="pattern-input" placeholder="Enter search pattern">
                         </div>
+                        <button class="icon-button and-button" title="Add AND condition">&</button>
                     </div>
                 </div>
             </div>
-            <button id="add-pattern">+</button>
-            <button id="apply">Apply</button>
+            <button id="add-pattern" class="secondary">Add Pattern</button>
             <script nonce="${nonce}">
                 const vscode = acquireVsCodeApi();
                 const patternsContainer = document.getElementById('patterns');
@@ -163,83 +225,65 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
                     const row = document.createElement('div');
                     row.className = 'pattern-row';
                     row.innerHTML = \`
-                        <button class="remove-pattern">-</button>
+                        <button class="icon-button remove-pattern" title="Remove">×</button>
+                        <button class="icon-button match-case-button" title="Match Case">Aa</button>
+                        <button class="icon-button match-whole-word-button" title="Match Whole Word">ab</button>
                         <div class="pattern-group">
-                            <input type="text" class="pattern-input" placeholder="Enter search pattern">
-                            <button class="and-button">&</button>
-                            <div class="pattern-options">
-                                <label class="pattern-option">
-                                    <input type="checkbox" class="match-case"> Match Case
-                                </label>
-                                <label class="pattern-option">
-                                    <input type="checkbox" class="match-whole-word"> Match Whole Word
-                                </label>
+                            <div class="pattern-input-container">
+                                <input type="text" class="pattern-input" placeholder="Enter search pattern">
                             </div>
+                            <button class="icon-button and-button" title="Add AND condition">&</button>
                         </div>
                     \`;
-                    addRemoveListener(row.querySelector('.remove-pattern'));
-                    addAndListener(row.querySelector('.and-button'));
+                    addListeners(row);
                     return row;
                 }
 
-                function createAndPattern(button) {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'pattern-input';
-                    input.placeholder = 'Enter AND pattern';
-
-                    const operator = document.createElement('span');
-                    operator.className = 'and-operator';
-                    operator.textContent = '&&';
-
-                    const group = button.closest('.pattern-group');
-                    group.insertBefore(operator, button);
-                    group.insertBefore(input, button);
-                }
-
-                function addRemoveListener(button) {
-                    button.addEventListener('click', function() {
-                        const row = this.closest('.pattern-row');
+                function addListeners(row) {
+                    row.querySelector('.remove-pattern').addEventListener('click', function() {
                         if (patternsContainer.children.length > 1) {
                             patternsContainer.removeChild(row);
                         } else {
                             vscode.postMessage({ type: 'info', message: 'Cannot remove the last input field.' });
                         }
                     });
-                }
 
-                function addAndListener(button) {
-                    button.addEventListener('click', function() {
-                        createAndPattern(this);
+                    row.querySelector('.and-button').addEventListener('click', function() {
+                        const patternGroup = this.closest('.pattern-group');
+                        const newInput = document.createElement('div');
+                        newInput.className = 'pattern-input-container';
+                        newInput.innerHTML = '<span class="and-operator">&&</span><input type="text" class="pattern-input" placeholder="Enter AND search pattern">';
+                        patternGroup.insertBefore(newInput, this);
+                    });
+
+                    row.querySelectorAll('.match-case-button, .match-whole-word-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            this.classList.toggle('active');
+                        });
                     });
                 }
 
-                // Add listeners to the initial buttons
-                addRemoveListener(patternsContainer.querySelector('.remove-pattern'));
-                addAndListener(patternsContainer.querySelector('.and-button'));
+                addListeners(patternsContainer.querySelector('.pattern-row'));
 
                 document.getElementById('add-pattern').addEventListener('click', () => {
-                    const inputs = patternsContainer.getElementsByClassName('pattern-input');
+                    const lastRow = patternsContainer.lastElementChild;
+                    const inputs = lastRow.querySelectorAll('.pattern-input');
                     const lastInput = inputs[inputs.length - 1];
+
                     if (lastInput && lastInput.value.trim() !== '') {
                         patternsContainer.appendChild(createPatternRow());
                     } else {
-                        vscode.postMessage({ type: 'info', message: 'Please fill the last input before adding a new one.' });
+                        vscode.postMessage({ type: 'info', message: 'Please fill the last input before adding a new pattern.' });
                     }
                 });
 
                 document.getElementById('apply').addEventListener('click', () => {
                     const patterns = Array.from(patternsContainer.getElementsByClassName('pattern-row')).map(row => {
-                        const inputs = row.getElementsByClassName('pattern-input');
-                        return Array.from(inputs).map(input => {
-                            const matchCase = input.parentElement.querySelector('.match-case').checked;
-                            const matchWholeWord = input.parentElement.querySelector('.match-whole-word').checked;
-                            return {
-                                pattern: input.value.trim(),
-                                matchCase,
-                                matchWholeWord
-                            };
-                        }).filter(v => v.pattern !== '');
+                        return Array.from(row.getElementsByClassName('pattern-input')).map(input => ({
+                            pattern: input.value.trim(),
+                            matchCase: row.querySelector('.match-case-button').classList.contains('active'),
+                            matchWholeWord: row.querySelector('.match-whole-word-button').classList.contains('active')
+                        })).filter(p => p.pattern !== '');
                     }).filter(group => group.length > 0);
                     vscode.postMessage({ type: 'apply', patterns: patterns });
                 });
