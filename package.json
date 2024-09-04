@@ -1,0 +1,58 @@
+{
+  "name": "multi-grep",
+  "displayName": "Multi-Grep",
+  "description": "A VS Code extension for multi-pattern grepping",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:multi-grep-view"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "multi-grep-sidebar",
+          "title": "Multi-Grep",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "multi-grep-sidebar": [
+        {
+          "type": "webview",
+          "id": "multi-grep-view",
+          "name": "Multi-Grep"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "multi-grep.start",
+        "title": "Start Multi-Grep"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "^14.x.x",
+    "@typescript-eslint/eslint-plugin": "^4.x.x",
+    "@typescript-eslint/parser": "^4.x.x",
+    "eslint": "^7.x.x",
+    "typescript": "^4.x.x"
+  }
+}
