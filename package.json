@@ -2,7 +2,7 @@
   "name": "multi-grep",
   "displayName": "Multi-Grep",
   "description": "Perform complex, multi-pattern searches within your active text editor",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -21,14 +21,14 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "multi-grep-sidebar-view",
+          "id": "multi-grep-sidebar",
           "title": "Multi-Grep",
-          "icon": "media/icon.svg"
+          "icon": "resources/icon.svg"
         }
       ]
     },
     "views": {
-      "multi-grep-sidebar-view": [
+      "multi-grep-sidebar": [
         {
           "type": "webview",
           "id": "multi-grep-view",
@@ -60,5 +60,5 @@
     "type": "git",
     "url": "https://github.com/theRTLmaker/multi-grep.git"
   },
-  "publisher": "Francisco Soares Mendes"
+  "publisher": "theRTLmaker"
 }
