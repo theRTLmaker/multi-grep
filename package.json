@@ -2,7 +2,7 @@
   "name": "multi-grep",
   "displayName": "Multi-Grep",
   "description": "Perform complex, multi-pattern searches within your active text editor",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.85.0"
   },

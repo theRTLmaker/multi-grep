@@ -196,6 +196,7 @@
             <button class="icon-button remove-pattern" title="Remove">×</button>
             <button class="icon-button match-case-button" title="Match Case">Aa</button>
             <button class="icon-button match-whole-word-button" title="Match Whole Word">ab</button>
+            <button class="icon-button regex-button" title="Use Regex">.*</button>
             <div class="pattern-group">
                 <div class="pattern-input-container">
                     <input type="text" class="pattern-input" placeholder="Enter search pattern">
@@ -217,6 +218,7 @@
                 <button class="icon-button remove-pattern" title="Remove">×</button>
                 <button class="icon-button match-case-button" title="Match Case">Aa</button>
                 <button class="icon-button match-whole-word-button" title="Match Whole Word">ab</button>
+                <button class="icon-button regex-button" title="Use Regex">.*</button>
                 <div class="pattern-group">
                     <div class="pattern-input-container">
                         <input type="text" class="pattern-input" placeholder="Enter search pattern">
@@ -252,6 +254,10 @@
             row.querySelector('.match-whole-word-button').addEventListener('click', function() {
                 this.classList.toggle('active');
             });
+
+            row.querySelector('.regex-button').addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
         }
 
         addListeners(patternsContainer.querySelector('.pattern-row'));
@@ -273,7 +279,8 @@
                 return Array.from(row.getElementsByClassName('pattern-input')).map(input => ({
                     pattern: input.value.trim(),
                     matchCase: row.querySelector('.match-case-button').classList.contains('active'),
-                    matchWholeWord: row.querySelector('.match-whole-word-button').classList.contains('active')
+                    matchWholeWord: row.querySelector('.match-whole-word-button').classList.contains('active'),
+                    useRegex: row.querySelector('.regex-button').classList.contains('active')
                 }));
             });
             vscode.postMessage({ type: 'stateUpdate', state: state });

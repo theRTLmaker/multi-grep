@@ -67,7 +67,7 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
         return htmlContent;
     }
 
-    private async _applyGrep(patterns: Array<Array<{ pattern: string; matchCase: boolean; matchWholeWord: boolean }>>) {
+    private async _applyGrep(patterns: Array<Array<{ pattern: string; matchCase: boolean; matchWholeWord: boolean; useRegex: boolean }>>) {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const document = editor.document;
@@ -76,13 +76,32 @@ class MultiGrepViewProvider implements vscode.WebviewViewProvider {
             let results = '';
 
             lines.forEach((line) => {
-                if (patterns.some(group => group.every(({ pattern, matchCase, matchWholeWord }) => {
-                    let flags = 'g';
-                    if (!matchCase) flags += 'i';
-                    let regexPattern = pattern;
-                    if (matchWholeWord) regexPattern = `\\b${regexPattern}\\b`;
-                    const regex = new RegExp(regexPattern, flags);
-                    return regex.test(line);
+                if (patterns.some(group => group.every(({ pattern, matchCase, matchWholeWord, useRegex }) => {
+                    if (useRegex) {
+                        let flags = 'g';
+                        if (!matchCase) flags += 'i';
+                        let regexPattern = pattern;
+                        if (matchWholeWord) regexPattern = `\\b${regexPattern}\\b`;
+                        try {
+                            const regex = new RegExp(regexPattern, flags);
+                            return regex.test(line);
+                        } catch (error) {
+                            vscode.window.showErrorMessage(`Invalid regex: ${pattern}`);
+                            return false;
+                        }
+                    } else {
+                        let searchText = pattern;
+                        let lineText = line;
+                        if (!matchCase) {
+                            searchText = searchText.toLowerCase();
+                            lineText = lineText.toLowerCase();
+                        }
+                        if (matchWholeWord) {
+                            const wordBoundary = /\b/;
+                            return lineText.split(wordBoundary).includes(searchText);
+                        }
+                        return lineText.includes(searchText);
+                    }
                 }))) {
                     results += `${line.trim()}\n`;
                 }
