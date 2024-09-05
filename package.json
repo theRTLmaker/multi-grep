@@ -2,7 +2,7 @@
   "name": "multi-grep",
   "displayName": "Multi-Grep",
   "description": "Perform complex, multi-pattern searches within your active text editor",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -60,5 +60,9 @@
     "type": "git",
     "url": "https://github.com/theRTLmaker/multi-grep.git"
   },
-  "publisher": "theRTLmaker"
+  "publisher": "theRTLmaker",
+  "files": [
+    "out/**/*",
+    "src/webview/**/*"
+  ]
 }
